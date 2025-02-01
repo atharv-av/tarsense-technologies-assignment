@@ -1,8 +1,6 @@
 import mongoose from "mongoose";
 
 const mongoUrl = process.env.MONGODB_URI;
-console.log(mongoUrl);
-
 
 if (!mongoUrl) {
   throw new Error("Valid MongoDB connection string not found!");
@@ -40,6 +38,8 @@ async function dbConnect() {
 
   try {
     cached.conn = await cached.promise;
+    console.log("MongoDB connected");
+    
   } catch (e) {
     cached.promise = null;
     throw e;
