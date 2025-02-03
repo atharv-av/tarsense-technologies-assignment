@@ -1,13 +1,13 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Mic, Loader2, Square } from "lucide-react"
 import { useAudioRecording } from "@/hooks/use-audio-recording"
-import { transcribeAudio } from "@/lib/audio-utils"
-import { uploadAudioFile } from "@/lib/file-helpers"
+import { useSpeechRecognition } from "@/hooks/use-speech-recognition"
+import { toast } from "@/hooks/use-toast"
 
 interface NoteCreationProps {
   onNoteCreated: () => void
@@ -16,7 +16,7 @@ interface NoteCreationProps {
 export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
-  const [isTranscribing, setIsTranscribing] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   
   const {
     isRecording,
@@ -26,25 +26,44 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
     handleStopRecording
   } = useAudioRecording()
 
+  const {
+    isListening,
+    transcript,
+    startListening,
+    stopListening,
+    resetTranscript,
+    error
+  } = useSpeechRecognition()
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: "Speech Recognition Error",
+        description: error,
+        variant: "destructive"
+      })
+    }
+  }, [error])
+
+  // Update content when transcript changes
+  useEffect(() => {
+    setContent(transcript)
+  }, [transcript])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const token = localStorage.getItem("token")
     if (!token) return
 
+    setIsProcessing(true)
     const formData = new FormData()
     formData.append("title", title)
     formData.append("content", content)
 
     if (audioBlob) {
-      try {
-        const audioUrl = await uploadAudioFile(audioBlob, token)
-        formData.append("audioUrl", audioUrl)
-        formData.append("isAudio", "true")
-        formData.append("duration", duration)
-      } catch (error) {
-        console.error("Failed to upload audio:", error)
-        return
-      }
+      formData.append("audio", audioBlob)
+      formData.append("isAudio", "true")
+      formData.append("duration", duration)
     }
 
     try {
@@ -59,28 +78,37 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
       if (response.ok) {
         setTitle("")
         setContent("")
+        resetTranscript()
         onNoteCreated()
+        toast({
+          title: "Success",
+          description: "Note created successfully"
+        })
+      } else {
+        throw new Error("Failed to create note")
       }
     } catch (error) {
       console.error("Failed to create note:", error)
+      toast({
+        title: "Error",
+        description: "Failed to create note. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setIsProcessing(false)
     }
   }
 
-  const handleRecordingComplete = async () => {
-    if (audioBlob) {
-      setIsTranscribing(true)
-      try {
-        await transcribeAudio(audioBlob, setContent, setIsTranscribing)
-      } catch (error) {
-        console.error("Transcription failed:", error)
-        setIsTranscribing(false)
-      }
-    }
+  const handleRecordingStart = () => {
+    handleStartRecording()
+    startListening()
+    setContent("") // Clear existing content
+    resetTranscript()
   }
 
   const handleRecordingStop = async () => {
     await handleStopRecording()
-    handleRecordingComplete()
+    stopListening()
   }
 
   return (
@@ -108,10 +136,10 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
             type="button"
             size="icon"
             variant={isRecording ? "destructive" : "secondary"}
-            onClick={isRecording ? handleRecordingStop : handleStartRecording}
-            disabled={isTranscribing}
+            onClick={isRecording ? handleRecordingStop : handleRecordingStart}
+            disabled={isProcessing}
           >
-            {isTranscribing ? (
+            {isProcessing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : isRecording ? (
               <Square className="h-4 w-4" />
@@ -119,13 +147,14 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
               <Mic className="h-4 w-4" />
             )}
           </Button>
-          <Button type="submit" disabled={isRecording || isTranscribing}>
+          <Button type="submit" disabled={isRecording || isProcessing}>
             Save
           </Button>
         </div>
         {isRecording && (
           <div className="absolute top-0 left-0 right-0 -translate-y-full bg-destructive text-destructive-foreground p-2 text-center">
             Recording... {duration}
+            {isListening && " (Transcribing...)"}
           </div>
         )}
       </form>

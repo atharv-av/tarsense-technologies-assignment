@@ -19,6 +19,10 @@ interface Note {
   audioUrl?: string
   duration?: string
   createdAt: string
+  images?: Array<{
+    url: string
+    caption: string
+  }>
 }
 
 interface NoteModalProps {
