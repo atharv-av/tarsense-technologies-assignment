@@ -36,8 +36,8 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
-  const [images, setImages] = useState<File[]>([])
-  const [imageCaptions, setImageCaptions] = useState<string[]>(note.images?.map((img) => img.caption) || [])
+  const [newImages, setNewImages] = useState<File[]>([])
+  const [newImageCaptions, setNewImageCaptions] = useState<string[]>([])
   const [existingImages, setExistingImages] = useState(note.images || [])
 
   const audioRef = useRef<HTMLAudioElement | null>(null)
@@ -118,15 +118,15 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
       formData.append("title", title)
       formData.append("content", content)
 
-      // Append new images
-      images.forEach((image, index) => {
-        formData.append("images", image)
-        formData.append("imageCaptions", imageCaptions[index] || "")
+      // Append existing images
+      existingImages.forEach((image) => {
+        formData.append("existingImages", JSON.stringify(image))
       })
 
-      // Append existing images
-      existingImages.forEach((image, index) => {
-        formData.append("existingImages", JSON.stringify(image))
+      // Append new images
+      newImages.forEach((image, index) => {
+        formData.append("newImages", image)
+        formData.append("newImageCaptions", newImageCaptions[index] || "")
       })
 
       const response = await fetch(`/api/notes/${note._id}`, {
@@ -183,9 +183,9 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newImages = Array.from(e.target.files)
-      setImages((prevImages) => [...prevImages, ...newImages])
-      setImageCaptions((prevCaptions) => [...prevCaptions, ...newImages.map(() => "")])
+      const uploadedImages = Array.from(e.target.files)
+      setNewImages((prevImages) => [...prevImages, ...uploadedImages])
+      setNewImageCaptions((prevCaptions) => [...prevCaptions, ...uploadedImages.map(() => "")])
     }
   }
 
@@ -197,7 +197,7 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
         return newImages
       })
     } else {
-      setImageCaptions((prevCaptions) => {
+      setNewImageCaptions((prevCaptions) => {
         const newCaptions = [...prevCaptions]
         newCaptions[index] = caption
         return newCaptions
@@ -209,8 +209,8 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
     if (isExisting) {
       setExistingImages((prevImages) => prevImages.filter((_, i) => i !== index))
     } else {
-      setImages((prevImages) => prevImages.filter((_, i) => i !== index))
-      setImageCaptions((prevCaptions) => prevCaptions.filter((_, i) => i !== index))
+      setNewImages((prevImages) => prevImages.filter((_, i) => i !== index))
+      setNewImageCaptions((prevCaptions) => prevCaptions.filter((_, i) => i !== index))
     }
   }
 
@@ -326,7 +326,7 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
                   </Button>
                 </div>
               ))}
-              {images.map((image, index) => (
+              {newImages.map((image, index) => (
                 <div key={`new-${index}`} className="space-y-2">
                   <img
                     src={URL.createObjectURL(image) || "/placeholder.svg"}
@@ -336,7 +336,7 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
                   <Input
                     type="text"
                     placeholder="Image caption"
-                    value={imageCaptions[index]}
+                    value={newImageCaptions[index]}
                     onChange={(e) => handleImageCaptionChange(index, e.target.value, false)}
                   />
                   <Button type="button" variant="destructive" size="sm" onClick={() => handleRemoveImage(index, false)}>

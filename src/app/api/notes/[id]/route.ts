@@ -37,26 +37,27 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     }
     if (formData.has("isFavorite")) updateData.isFavorite = formData.get("isFavorite") === "true"
 
-    // Handle image files
-    const imageFiles = formData.getAll("images") as File[]
-    const imageCaptions = formData.getAll("imageCaptions") as string[]
+    // Handle existing images
+    const existingImages = formData.getAll("existingImages")
+    updateData.images = existingImages.map((img) => JSON.parse(img.toString()))
 
-    if (imageFiles.length > 0) {
-      updateData.images = []
-      for (let i = 0; i < imageFiles.length; i++) {
-        const file = imageFiles[i]
-        const caption = imageCaptions[i] || ""
+    // Handle new image files
+    const imageFiles = formData.getAll("newImages") as File[]
+    const imageCaptions = formData.getAll("newImageCaptions") as string[]
 
-        const bytes = await file.arrayBuffer()
-        const buffer = Buffer.from(bytes)
+    for (let i = 0; i < imageFiles.length; i++) {
+      const file = imageFiles[i]
+      const caption = imageCaptions[i] || ""
 
-        const fileName = `${uuidv4()}${path.extname(file.name)}`
-        const uploadDir = path.join(process.cwd(), "public", "uploads")
-        const filePath = path.join(uploadDir, fileName)
+      const bytes = await file.arrayBuffer()
+      const buffer = Buffer.from(bytes)
 
-        await writeFile(filePath, buffer)
-        updateData.images.push({ url: `/uploads/${fileName}`, caption })
-      }
+      const fileName = `${uuidv4()}${path.extname(file.name)}`
+      const uploadDir = path.join(process.cwd(), "public", "uploads")
+      const filePath = path.join(uploadDir, fileName)
+
+      await writeFile(filePath, buffer)
+      updateData.images.push({ url: `/uploads/${fileName}`, caption })
     }
 
     const note = await Note.findOneAndUpdate(
