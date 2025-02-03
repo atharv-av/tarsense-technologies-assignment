@@ -1,29 +1,41 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Mic, Loader2, Square, ImageIcon } from "lucide-react"
-import { useAudioRecording } from "@/hooks/use-audio-recording"
-import { useSpeechRecognition } from "@/hooks/use-speech-recognition"
-import { toast } from "@/hooks/use-toast"
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Mic, Loader2, Square, ImageIcon } from "lucide-react";
+import { useAudioRecording } from "@/hooks/use-audio-recording";
+import { useSpeechRecognition } from "@/hooks/use-speech-recognition";
+import { toast } from "@/hooks/use-toast";
 
 interface NoteCreationProps {
-  onNoteCreated: () => void
+  onNoteCreated: () => void;
 }
 
 export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
-  const [title, setTitle] = useState("")
-  const [content, setContent] = useState("")
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [images, setImages] = useState<File[]>([])
-  const [imageCaptions, setImageCaptions] = useState<string[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [images, setImages] = useState<File[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { isRecording, duration, audioBlob, handleStartRecording, handleStopRecording } = useAudioRecording()
+  const {
+    isRecording,
+    duration,
+    audioBlob,
+    handleStartRecording,
+    handleStopRecording,
+  } = useAudioRecording();
 
-  const { isListening, transcript, startListening, stopListening, resetTranscript, error } = useSpeechRecognition()
+  const {
+    isListening,
+    transcript,
+    startListening,
+    stopListening,
+    resetTranscript,
+    error,
+  } = useSpeechRecognition();
 
   useEffect(() => {
     if (error) {
@@ -31,36 +43,35 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
         title: "Speech Recognition Error",
         description: error,
         variant: "destructive",
-      })
+      });
     }
-  }, [error])
+  }, [error]);
 
   // Update content when transcript changes
   useEffect(() => {
-    setContent(transcript)
-  }, [transcript])
+    setContent(transcript);
+  }, [transcript]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const token = localStorage.getItem("token")
-    if (!token) return
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-    setIsProcessing(true)
-    const formData = new FormData()
-    formData.append("title", title)
-    formData.append("content", content)
+    setIsProcessing(true);
+    const formData = new FormData();
+    formData.append("title", title);
+    formData.append("content", content);
 
     if (audioBlob) {
-      formData.append("audio", audioBlob)
-      formData.append("isAudio", "true")
-      formData.append("duration", duration)
+      formData.append("audio", audioBlob);
+      formData.append("isAudio", "true");
+      formData.append("duration", duration);
     }
 
     // Append images and captions
     images.forEach((image, index) => {
-      formData.append("images", image)
-      formData.append("imageCaptions", imageCaptions[index] || "")
-    })
+      formData.append("images", image);
+    });
 
     try {
       const response = await fetch("/api/notes", {
@@ -69,70 +80,62 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
           Authorization: `Bearer ${token}`,
         },
         body: formData,
-      })
+      });
 
       if (response.ok) {
-        setTitle("")
-        setContent("")
-        setImages([])
-        setImageCaptions([])
-        resetTranscript()
-        onNoteCreated()
+        setTitle("");
+        setContent("");
+        setImages([]);
+        resetTranscript();
+        onNoteCreated();
         toast({
           title: "Success",
           description: "Note created successfully",
-        })
+        });
       } else {
-        throw new Error("Failed to create note")
+        throw new Error("Failed to create note");
       }
     } catch (error) {
-      console.error("Failed to create note:", error)
+      console.error("Failed to create note:", error);
       toast({
         title: "Error",
         description: "Failed to create note. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsProcessing(false)
+      setIsProcessing(false);
     }
-  }
+  };
 
   const handleRecordingStart = () => {
-    handleStartRecording()
-    startListening()
-    setContent("") // Clear existing content
-    resetTranscript()
-  }
+    handleStartRecording();
+    startListening();
+    setContent(""); // Clear existing content
+    resetTranscript();
+  };
 
   const handleRecordingStop = async () => {
-    await handleStopRecording()
-    stopListening()
-  }
+    await handleStopRecording();
+    stopListening();
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      const newImages = Array.from(e.target.files)
-      setImages((prevImages) => [...prevImages, ...newImages])
-      setImageCaptions((prevCaptions) => [...prevCaptions, ...newImages.map(() => "")])
+      const newImages = Array.from(e.target.files);
+      setImages((prevImages) => [...prevImages, ...newImages]);
     }
-  }
-
-  const handleImageCaptionChange = (index: number, caption: string) => {
-    setImageCaptions((prevCaptions) => {
-      const newCaptions = [...prevCaptions]
-      newCaptions[index] = caption
-      return newCaptions
-    })
-  }
+  };
 
   const handleRemoveImage = (index: number) => {
-    setImages((prevImages) => prevImages.filter((_, i) => i !== index))
-    setImageCaptions((prevCaptions) => prevCaptions.filter((_, i) => i !== index))
-  }
+    setImages((prevImages) => prevImages.filter((_, i) => i !== index));
+  };
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
-      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex flex-col gap-4">
+      <form
+        onSubmit={handleSubmit}
+        className="max-w-3xl mx-auto flex flex-col gap-4"
+      >
         <div className="flex items-start gap-4">
           <div className="flex-1">
             <Input
@@ -167,7 +170,12 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
                 <Mic className="h-4 w-4" />
               )}
             </Button>
-            <Button type="button" size="icon" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+            <Button
+              type="button"
+              size="icon"
+              variant="secondary"
+              onClick={() => fileInputRef.current?.click()}
+            >
               <ImageIcon className="h-4 w-4" />
             </Button>
             <input
@@ -192,13 +200,12 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
                   alt={`Uploaded image ${index + 1}`}
                   className="w-full h-32 object-cover rounded"
                 />
-                <Input
-                  type="text"
-                  placeholder="Image caption"
-                  value={imageCaptions[index]}
-                  onChange={(e) => handleImageCaptionChange(index, e.target.value)}
-                />
-                <Button type="button" variant="destructive" size="sm" onClick={() => handleRemoveImage(index)}>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleRemoveImage(index)}
+                >
                   Remove
                 </Button>
               </div>
@@ -213,6 +220,5 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
         )}
       </form>
     </div>
-  )
+  );
 }
-

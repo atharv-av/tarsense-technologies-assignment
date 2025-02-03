@@ -3,14 +3,13 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import AuthForm from "@/components/auth-form"
-import SearchBar from "@/components/search-bar"
 import NoteList from "@/components/note-list"
 import NoteCreation from "@/components/note-creation"
+import { Sidebar } from "@/components/sidebar"
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [notes, setNotes] = useState([])
-  const [searchTerm, setSearchTerm] = useState("")
   const router = useRouter()
 
   useEffect(() => {
@@ -47,28 +46,17 @@ export default function Home() {
     router.push("/")
   }
 
-  const handleSearch = (term: string) => {
-    setSearchTerm(term)
-  }
-
-  const filteredNotes = notes.filter(
-    (note: any) =>
-      note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      note.content.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
-
   if (!isLoggedIn) {
     return <AuthForm onLogin={handleLogin} />
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <button onClick={handleLogout} className="mb-4 px-4 py-2 bg-red-500 text-white rounded">
-        Logout
-      </button>
-      <SearchBar onSearch={handleSearch} />
-      <NoteList notes={filteredNotes} onUpdate={fetchNotes} />
-      <NoteCreation onNoteCreated={fetchNotes} />
+    <div className="flex h-screen">
+      <Sidebar onLogout={handleLogout} />
+      <main className="flex-1 overflow-auto">
+        <NoteList notes={notes} onUpdate={fetchNotes} />
+        <NoteCreation onNoteCreated={fetchNotes} />
+      </main>
     </div>
   )
 }
