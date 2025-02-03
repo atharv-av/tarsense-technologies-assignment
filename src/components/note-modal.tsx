@@ -1,117 +1,129 @@
 // components/NoteModal.tsx
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader } from "@/components/ui/dialog"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Copy, Download, Maximize2, Minimize2, Play, Pause, X } from "lucide-react"
-import { toast } from "@/hooks/use-toast"
-import { DialogTitle } from "@radix-ui/react-dialog"
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogHeader,
+} from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Copy,
+  Download,
+  Maximize2,
+  Minimize2,
+  Play,
+  Pause,
+  X,
+} from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 interface Note {
-  _id: string
-  title: string
-  content: string
-  isAudio: boolean
-  audioUrl?: string
-  duration?: string
-  createdAt: string
+  _id: string;
+  title: string;
+  content: string;
+  isAudio: boolean;
+  audioUrl?: string;
+  duration?: string;
+  createdAt: string;
   images?: Array<{
-    url: string
-    caption: string
-  }>
+    url: string;
+    caption: string;
+  }>;
 }
 
 interface NoteModalProps {
-  note: Note
-  onClose: () => void
-  onUpdate: () => void
+  note: Note;
+  onClose: () => void;
+  onUpdate: () => void;
 }
 
 export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
-  const [isFullscreen, setIsFullscreen] = useState(false)
-  const [title, setTitle] = useState(note.title)
-  const [content, setContent] = useState(note.content)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [currentTime, setCurrentTime] = useState(0)
-  const [duration, setDuration] = useState(0)
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [title, setTitle] = useState(note.title);
+  const [content, setContent] = useState(note.content);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null)
-  const progressRef = useRef<HTMLDivElement>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const progressRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (note.audioUrl && !audioRef.current) {
-      audioRef.current = new Audio(note.audioUrl)
-      
-      const setupAudio = () => {
-        audioRef.current?.addEventListener("timeupdate", updateProgress)
-        audioRef.current?.addEventListener("loadedmetadata", () => {
-          setDuration(audioRef.current?.duration || 0)
-        })
-        audioRef.current?.addEventListener("ended", () => {
-          setIsPlaying(false)
-          setCurrentTime(0)
-        })
-      }
+      audioRef.current = new Audio(note.audioUrl);
 
-      setupAudio()
+      const setupAudio = () => {
+        audioRef.current?.addEventListener("timeupdate", updateProgress);
+        audioRef.current?.addEventListener("loadedmetadata", () => {
+          setDuration(audioRef.current?.duration || 0);
+        });
+        audioRef.current?.addEventListener("ended", () => {
+          setIsPlaying(false);
+          setCurrentTime(0);
+        });
+      };
+
+      setupAudio();
 
       return () => {
         if (audioRef.current) {
-          audioRef.current.removeEventListener("timeupdate", updateProgress)
-          audioRef.current.removeEventListener("loadedmetadata", () => {})
-          audioRef.current.removeEventListener("ended", () => {})
-          audioRef.current.pause()
-          audioRef.current = null
+          audioRef.current.removeEventListener("timeupdate", updateProgress);
+          audioRef.current.removeEventListener("loadedmetadata", () => {});
+          audioRef.current.removeEventListener("ended", () => {});
+          audioRef.current.pause();
+          audioRef.current = null;
         }
-      }
+      };
     }
-  }, [note.audioUrl])
+  }, [note.audioUrl]);
 
   const updateProgress = () => {
     if (audioRef.current) {
-      setCurrentTime(audioRef.current.currentTime)
+      setCurrentTime(audioRef.current.currentTime);
     }
-  }
+  };
 
   const togglePlay = () => {
     if (audioRef.current) {
       if (isPlaying) {
-        audioRef.current.pause()
+        audioRef.current.pause();
       } else {
-        audioRef.current.play().catch(error => {
-          console.error("Error playing audio:", error)
+        audioRef.current.play().catch((error) => {
+          console.error("Error playing audio:", error);
           toast({
             title: "Playback Error",
             description: "Failed to play audio. Please try again.",
-            variant: "destructive"
-          })
-        })
+            variant: "destructive",
+          });
+        });
       }
-      setIsPlaying(!isPlaying)
+      setIsPlaying(!isPlaying);
     }
-  }
+  };
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (progressRef.current && audioRef.current) {
-      const rect = progressRef.current.getBoundingClientRect()
-      const pos = (e.clientX - rect.left) / rect.width
-      audioRef.current.currentTime = pos * duration
+      const rect = progressRef.current.getBoundingClientRect();
+      const pos = (e.clientX - rect.left) / rect.width;
+      audioRef.current.currentTime = pos * duration;
     }
-  }
+  };
 
   const formatTime = (time: number) => {
-    const minutes = Math.floor(time / 60)
-    const seconds = Math.floor(time % 60)
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
-  }
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+  };
 
   const handleSave = async () => {
     try {
-      const token = localStorage.getItem("token")
+      const token = localStorage.getItem("token");
       const response = await fetch(`/api/notes/${note._id}`, {
         method: "PATCH",
         headers: {
@@ -122,55 +134,61 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
           title,
           content,
         }),
-      })
+      });
 
       if (response.ok) {
-        onUpdate()
-        onClose()
+        onUpdate();
+        onClose();
         toast({
           title: "Note updated",
           description: "Your note has been successfully updated.",
-        })
+        });
       } else {
-        throw new Error("Failed to update note")
+        throw new Error("Failed to update note");
       }
     } catch (error) {
-      console.error("Error updating note:", error)
+      console.error("Error updating note:", error);
       toast({
         title: "Update failed",
         description: "Failed to update the note. Please try again.",
         variant: "destructive",
-      })
+      });
     }
-  }
+  };
 
   const handleDownloadAudio = async () => {
     if (note.audioUrl) {
       try {
-        const response = await fetch(note.audioUrl)
-        const blob = await response.blob()
-        const url = window.URL.createObjectURL(blob)
-        const a = document.createElement("a")
-        a.href = url
-        a.download = `${note.title.replace(/\s+/g, "_")}_audio.wav`
-        document.body.appendChild(a)
-        a.click()
-        window.URL.revokeObjectURL(url)
-        document.body.removeChild(a)
+        const response = await fetch(note.audioUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${note.title.replace(/\s+/g, "_")}_audio.wav`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
       } catch (error) {
-        console.error("Error downloading audio:", error)
+        console.error("Error downloading audio:", error);
         toast({
           title: "Download failed",
           description: "Failed to download audio. Please try again.",
           variant: "destructive",
-        })
+        });
       }
     }
-  }
+  };
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className={`${isFullscreen ? "w-screen h-screen max-w-none m-0 rounded-none" : "max-w-4xl"}`}>
+      <DialogContent
+        className={`${
+          isFullscreen
+            ? "w-screen h-screen max-w-none m-0 rounded-none"
+            : "max-w-4xl"
+        }`}
+      >
         <DialogTitle></DialogTitle>
         <DialogHeader className="flex items-center justify-between">
           <Input
@@ -179,8 +197,16 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
             className="text-lg font-semibold flex-1 mr-4"
           />
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => setIsFullscreen(!isFullscreen)}>
-              {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsFullscreen(!isFullscreen)}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="h-4 w-4" />
+              ) : (
+                <Maximize2 className="h-4 w-4" />
+              )}
             </Button>
             <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="h-4 w-4" />
@@ -213,9 +239,13 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
               <div className="bg-muted p-4 rounded-lg">
                 <div className="flex items-center gap-4 mb-2">
                   <Button variant="ghost" size="icon" onClick={togglePlay}>
-                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                    {isPlaying ? (
+                      <Pause className="h-4 w-4" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
                   </Button>
-                  
+
                   <div
                     ref={progressRef}
                     className="flex-1 h-2 bg-secondary rounded-full cursor-pointer"
@@ -231,11 +261,15 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
                     {formatTime(currentTime)} / {note.duration}
                   </span>
 
-                  <Button variant="ghost" size="icon" onClick={handleDownloadAudio}>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleDownloadAudio}
+                  >
                     <Download className="h-4 w-4" />
                   </Button>
                 </div>
-                
+
                 <div className="flex items-center justify-between text-sm text-muted-foreground">
                   <span>Original Recording</span>
                   <span>{note.duration}</span>
@@ -249,11 +283,11 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => {
-                    navigator.clipboard.writeText(content)
+                    navigator.clipboard.writeText(content);
                     toast({
                       title: "Copied",
                       description: "Transcription copied to clipboard",
-                    })
+                    });
                   }}
                 >
                   <Copy className="h-4 w-4 mr-2" />
@@ -265,5 +299,5 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
         </Tabs>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
