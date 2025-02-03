@@ -228,7 +228,7 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
                   </div>
 
                   <span className="text-sm text-muted-foreground min-w-[80px] text-right">
-                    {formatTime(currentTime)} / {formatTime(duration)}
+                    {formatTime(currentTime)} / {note.duration}
                   </span>
 
                   <Button variant="ghost" size="icon" onClick={handleDownloadAudio}>

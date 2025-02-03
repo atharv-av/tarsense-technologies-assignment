@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 
+declare global {
+  interface Window {
+    SpeechRecognition: any
+    webkitSpeechRecognition: any
+  }
+}
+
 interface UseSpeechRecognitionReturn {
   isListening: boolean
   transcript: string
