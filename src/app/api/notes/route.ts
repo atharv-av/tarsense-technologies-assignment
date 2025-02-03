@@ -39,6 +39,26 @@ export async function POST(req: Request) {
       audioUrl = `/uploads/${fileName}`
     }
 
+    // Handle image files
+    const imageFiles = formData.getAll("images") as File[]
+    const imageCaptions = formData.getAll("imageCaptions") as string[]
+    const images = []
+
+    for (let i = 0; i < imageFiles.length; i++) {
+      const file = imageFiles[i]
+      const caption = imageCaptions[i] || ""
+
+      const bytes = await file.arrayBuffer()
+      const buffer = Buffer.from(bytes)
+
+      const fileName = `${uuidv4()}${path.extname(file.name)}`
+      const uploadDir = path.join(process.cwd(), "public", "uploads")
+      const filePath = path.join(uploadDir, fileName)
+
+      await writeFile(filePath, buffer)
+      images.push({ url: `/uploads/${fileName}`, caption })
+    }
+
     const note = await Note.create({
       title,
       content,
@@ -46,6 +66,7 @@ export async function POST(req: Request) {
       isAudio,
       audioUrl: audioUrl || undefined,
       duration: duration || undefined,
+      images,
     })
 
     return NextResponse.json(note)

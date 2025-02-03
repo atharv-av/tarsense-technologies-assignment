@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Mic, Loader2, Square } from "lucide-react"
+import { Mic, Loader2, Square, ImageIcon } from "lucide-react"
 import { useAudioRecording } from "@/hooks/use-audio-recording"
 import { useSpeechRecognition } from "@/hooks/use-speech-recognition"
 import { toast } from "@/hooks/use-toast"
@@ -17,30 +17,20 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
-  
-  const {
-    isRecording,
-    duration,
-    audioBlob,
-    handleStartRecording,
-    handleStopRecording
-  } = useAudioRecording()
+  const [images, setImages] = useState<File[]>([])
+  const [imageCaptions, setImageCaptions] = useState<string[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const {
-    isListening,
-    transcript,
-    startListening,
-    stopListening,
-    resetTranscript,
-    error
-  } = useSpeechRecognition()
+  const { isRecording, duration, audioBlob, handleStartRecording, handleStopRecording } = useAudioRecording()
+
+  const { isListening, transcript, startListening, stopListening, resetTranscript, error } = useSpeechRecognition()
 
   useEffect(() => {
     if (error) {
       toast({
         title: "Speech Recognition Error",
         description: error,
-        variant: "destructive"
+        variant: "destructive",
       })
     }
   }, [error])
@@ -66,6 +56,12 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
       formData.append("duration", duration)
     }
 
+    // Append images and captions
+    images.forEach((image, index) => {
+      formData.append("images", image)
+      formData.append("imageCaptions", imageCaptions[index] || "")
+    })
+
     try {
       const response = await fetch("/api/notes", {
         method: "POST",
@@ -78,11 +74,13 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
       if (response.ok) {
         setTitle("")
         setContent("")
+        setImages([])
+        setImageCaptions([])
         resetTranscript()
         onNoteCreated()
         toast({
           title: "Success",
-          description: "Note created successfully"
+          description: "Note created successfully",
         })
       } else {
         throw new Error("Failed to create note")
@@ -92,7 +90,7 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
       toast({
         title: "Error",
         description: "Failed to create note. Please try again.",
-        variant: "destructive"
+        variant: "destructive",
       })
     } finally {
       setIsProcessing(false)
@@ -111,46 +109,102 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
     stopListening()
   }
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const newImages = Array.from(e.target.files)
+      setImages((prevImages) => [...prevImages, ...newImages])
+      setImageCaptions((prevCaptions) => [...prevCaptions, ...newImages.map(() => "")])
+    }
+  }
+
+  const handleImageCaptionChange = (index: number, caption: string) => {
+    setImageCaptions((prevCaptions) => {
+      const newCaptions = [...prevCaptions]
+      newCaptions[index] = caption
+      return newCaptions
+    })
+  }
+
+  const handleRemoveImage = (index: number) => {
+    setImages((prevImages) => prevImages.filter((_, i) => i !== index))
+    setImageCaptions((prevCaptions) => prevCaptions.filter((_, i) => i !== index))
+  }
+
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
-      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex items-start gap-4">
-        <div className="flex-1">
-          <Input
-            type="text"
-            placeholder="Note title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-            className="mb-2"
-          />
-          <Textarea
-            placeholder="Start typing or record audio..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            required
-            className="min-h-[100px]"
-          />
+      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex flex-col gap-4">
+        <div className="flex items-start gap-4">
+          <div className="flex-1">
+            <Input
+              type="text"
+              placeholder="Note title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              className="mb-2"
+            />
+            <Textarea
+              placeholder="Start typing or record audio..."
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              required
+              className="min-h-[100px]"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Button
+              type="button"
+              size="icon"
+              variant={isRecording ? "destructive" : "secondary"}
+              onClick={isRecording ? handleRecordingStop : handleRecordingStart}
+              disabled={isProcessing}
+            >
+              {isProcessing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isRecording ? (
+                <Square className="h-4 w-4" />
+              ) : (
+                <Mic className="h-4 w-4" />
+              )}
+            </Button>
+            <Button type="button" size="icon" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageUpload}
+              accept="image/*"
+              multiple
+              className="hidden"
+            />
+            <Button type="submit" disabled={isRecording || isProcessing}>
+              Save
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-col gap-2">
-          <Button
-            type="button"
-            size="icon"
-            variant={isRecording ? "destructive" : "secondary"}
-            onClick={isRecording ? handleRecordingStop : handleRecordingStart}
-            disabled={isProcessing}
-          >
-            {isProcessing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : isRecording ? (
-              <Square className="h-4 w-4" />
-            ) : (
-              <Mic className="h-4 w-4" />
-            )}
-          </Button>
-          <Button type="submit" disabled={isRecording || isProcessing}>
-            Save
-          </Button>
-        </div>
+        {images.length > 0 && (
+          <div className="grid grid-cols-2 gap-4 mt-4">
+            {images.map((image, index) => (
+              <div key={index} className="flex flex-col gap-2">
+                <img
+                  src={URL.createObjectURL(image) || "/placeholder.svg"}
+                  alt={`Uploaded image ${index + 1}`}
+                  className="w-full h-32 object-cover rounded"
+                />
+                <Input
+                  type="text"
+                  placeholder="Image caption"
+                  value={imageCaptions[index]}
+                  onChange={(e) => handleImageCaptionChange(index, e.target.value)}
+                />
+                <Button type="button" variant="destructive" size="sm" onClick={() => handleRemoveImage(index)}>
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
         {isRecording && (
           <div className="absolute top-0 left-0 right-0 -translate-y-full bg-destructive text-destructive-foreground p-2 text-center">
             Recording... {duration}
@@ -161,3 +215,4 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
     </div>
   )
 }
+

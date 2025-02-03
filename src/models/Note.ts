@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose from "mongoose"
 
 const NoteSchema = new mongoose.Schema({
   userId: {
@@ -33,6 +33,7 @@ const NoteSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-});
+})
 
-export default mongoose.models.Note || mongoose.model("Note", NoteSchema);
+export default mongoose.models.Note || mongoose.model("Note", NoteSchema)
+
