@@ -43,12 +43,15 @@ export default function NoteList({ notes, onUpdate }: NoteListProps) {
     e.stopPropagation();
     try {
       const token = localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append("isFavorite", (!note.isFavorite).toString());
+
       const response = await fetch(`/api/notes/${note._id}`, {
         method: "PATCH",
         headers: {
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ isFavorite: !note.isFavorite }),
+        body: formData,
       });
 
       if (!response.ok) throw new Error();
@@ -65,11 +68,12 @@ export default function NoteList({ notes, onUpdate }: NoteListProps) {
     }
   };
 
-  const handleCopy = async (content: string) => {
+  const handleCopy = async (e: React.MouseEvent, content: string) => {
+    e.stopPropagation();
     try {
       await navigator.clipboard.writeText(content);
       toast({ title: "Copied to clipboard" });
-    } catch (error) {
+    } catch {
       toast({
         title: "Failed to copy",
         variant: "destructive",
@@ -77,7 +81,8 @@ export default function NoteList({ notes, onUpdate }: NoteListProps) {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     if (!window.confirm("Delete this note?")) return;
 
     try {
@@ -91,7 +96,7 @@ export default function NoteList({ notes, onUpdate }: NoteListProps) {
 
       onUpdate();
       toast({ title: "Note deleted" });
-    } catch (error) {
+    } catch {
       toast({
         title: "Failed to delete note",
         variant: "destructive",
@@ -110,24 +115,12 @@ export default function NoteList({ notes, onUpdate }: NoteListProps) {
       return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
     });
 
-  const formatDate = (dateString: string) => (
-    new Date(dateString).toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    })
-  );
-
   return (
     <div className="container mx-auto p-4">
-      <div className="flex items-center justify-between mb-6 md:mt-0 mt-20">
+      <div className="flex items-center justify-between mb-6 md:mt-0 mt-12">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            type="text"
             placeholder="Search notes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -151,10 +144,10 @@ export default function NoteList({ notes, onUpdate }: NoteListProps) {
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                {formatDate(note.createdAt)}
+                {new Date(note.createdAt).toLocaleString()}
               </CardTitle>
               <div className="flex items-center bg-gray-200 rounded-full px-2 py-1 text-sm text-muted-foreground">
-                {note.isAudio && note.duration ? (
+                {note.isAudio ? (
                   <>
                     <Play className="h-3 w-3 mr-1" />
                     {note.duration}
@@ -192,20 +185,14 @@ export default function NoteList({ notes, onUpdate }: NoteListProps) {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCopy(note.content);
-                    }}
+                    onClick={(e) => handleCopy(e, note.content)}
                   >
                     <Copy className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(note._id);
-                    }}
+                    onClick={(e) => handleDelete(e, note._id)}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

@@ -1,4 +1,4 @@
-import { Home, Star, LogOut, Menu } from "lucide-react";
+import { Home, Star, LogOut, Menu, AudioWaveform } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -19,7 +19,9 @@ const SidebarContent = ({ onLogout }: SidebarProps) => {
       <div className="p-4">
         <div className="flex items-center gap-2">
           <div className="size-8 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-semibold">AI</span>
+            <span className="text-primary-foreground bg-purple-500 rounded-full py-2 text-white px-1 font-semibold">
+              <AudioWaveform />
+            </span>
           </div>
           <h1 className="font-semibold">AI Notes</h1>
         </div>

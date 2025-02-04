@@ -127,7 +127,7 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-background border-t p-4">
+    <div className="fixed bottom-0 left-0 right-0 md:bg-background bg-purple-200 border-t p-4">
       <form
         onSubmit={handleSubmit}
         className="max-w-3xl mx-auto flex flex-col gap-4"
@@ -140,14 +140,14 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="mb-2"
+              className="mb-2 bg-white"
             />
             <Textarea
               placeholder="Start typing or record audio..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
               required
-              className="min-h-[100px]"
+              className="min-h-[100px] bg-white"
             />
           </div>
           <div className="flex flex-col gap-2">
