@@ -1,6 +1,4 @@
-"use client";
-
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,7 +45,6 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
     }
   }, [error]);
 
-  // Update content when transcript changes
   useEffect(() => {
     setContent(transcript);
   }, [transcript]);
@@ -68,8 +65,7 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
       formData.append("duration", duration);
     }
 
-    // Append images and captions
-    images.forEach((image, index) => {
+    images.forEach((image) => {
       formData.append("images", image);
     });
 
@@ -110,7 +106,7 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
   const handleRecordingStart = () => {
     handleStartRecording();
     startListening();
-    setContent(""); // Clear existing content
+    setContent("");
     resetTranscript();
   };
 
@@ -196,7 +192,7 @@ export default function NoteCreation({ onNoteCreated }: NoteCreationProps) {
             {images.map((image, index) => (
               <div key={index} className="flex flex-col gap-2">
                 <img
-                  src={URL.createObjectURL(image) || "/placeholder.svg"}
+                  src={URL.createObjectURL(image)}
                   alt={`Uploaded image ${index + 1}`}
                   className="w-full h-32 object-cover rounded"
                 />

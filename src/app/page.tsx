@@ -33,8 +33,9 @@ export default function Home() {
     }
   }
 
-  const handleLogin = (token: string) => {
+  const handleLogin = (token: string, username: string) => {
     localStorage.setItem("token", token)
+    localStorage.setItem("username", username)
     setIsLoggedIn(true)
     fetchNotes()
   }

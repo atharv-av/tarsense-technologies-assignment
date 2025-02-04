@@ -9,39 +9,16 @@ export default function FavouritesPage() {
   const [notes, setNotes] = useState([]);
   const router = useRouter();
 
-  //   useEffect(() => {
-  //     const token = localStorage.getItem("token");
-  //     if (!token) {
-  //       router.push("/");
-  //       return;
-  //     }
-  //     fetchFavouriteNotes();
-  //   }, [router]);
-
-  //   const fetchFavouriteNotes = async () => {
-  //     const token = localStorage.getItem("token");
-  //     const response = await fetch("/api/notes/favourites", {
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //       },
-  //     });
-  //     if (response.ok) {
-  //       const data = await response.json();
-  //       setNotes(data);
-  //     }
-  //   };
-
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      //   setIsLoggedIn(true)
       fetchNotes();
     }
   }, []);
 
   const fetchNotes = async () => {
     const token = localStorage.getItem("token");
-    const response = await fetch("/api/notes", {
+    const response = await fetch("/api/favourites", {
       headers: {
         Authorization: `Bearer ${token}`,
       },

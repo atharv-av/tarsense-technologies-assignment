@@ -4,7 +4,16 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Copy, Trash2, Play, Search, SortDesc, ImageIcon } from "lucide-react";
+import {
+  Copy,
+  Trash2,
+  Play,
+  Search,
+  SortDesc,
+  ImageIcon,
+  Text,
+  Heart,
+} from "lucide-react";
 import NoteModal from "./note-modal";
 import { toast } from "@/hooks/use-toast";
 
@@ -30,62 +39,70 @@ export default function NoteList({ notes, onUpdate }: NoteListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
+  const handleToggleFavorite = async (e: React.MouseEvent, note: Note) => {
+    e.stopPropagation();
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`/api/notes/${note._id}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ isFavorite: !note.isFavorite }),
+      });
+
+      if (!response.ok) throw new Error();
+
+      onUpdate();
+      toast({
+        title: !note.isFavorite ? "Added to favorites" : "Removed from favorites",
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to update favorite status",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleCopy = async (content: string) => {
     try {
       await navigator.clipboard.writeText(content);
-      toast({
-        title: "Copied to clipboard",
-        description: "Note content has been copied to your clipboard.",
-      });
+      toast({ title: "Copied to clipboard" });
     } catch (error) {
-      console.error("Failed to copy:", error);
       toast({
-        title: "Copy failed",
-        description: "Failed to copy content to clipboard.",
+        title: "Failed to copy",
         variant: "destructive",
       });
     }
   };
 
   const handleDelete = async (id: string) => {
-    const confirmed = window.confirm(
-      "Are you sure you want to delete this note?"
-    );
-    if (!confirmed) return;
+    if (!window.confirm("Delete this note?")) return;
 
     try {
       const token = localStorage.getItem("token");
       const response = await fetch(`/api/notes/${id}`, {
         method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      if (response.ok) {
-        onUpdate();
-        toast({
-          title: "Note deleted",
-          description: "Your note has been successfully deleted.",
-        });
-      } else {
-        throw new Error("Failed to delete note");
-      }
+      if (!response.ok) throw new Error();
+
+      onUpdate();
+      toast({ title: "Note deleted" });
     } catch (error) {
-      console.error("Delete error:", error);
       toast({
-        title: "Delete failed",
-        description: "Failed to delete the note. Please try again.",
+        title: "Failed to delete note",
         variant: "destructive",
       });
     }
   };
 
   const filteredAndSortedNotes = notes
-    .filter(
-      (note) =>
-        note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        note.content.toLowerCase().includes(searchTerm.toLowerCase())
+    .filter(note =>
+      note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      note.content.toLowerCase().includes(searchTerm.toLowerCase())
     )
     .sort((a, b) => {
       const dateA = new Date(a.createdAt).getTime();
@@ -93,20 +110,20 @@ export default function NoteList({ notes, onUpdate }: NoteListProps) {
       return sortDirection === "asc" ? dateA - dateB : dateB - dateA;
     });
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString("en-US", {
+  const formatDate = (dateString: string) => (
+    new Date(dateString).toLocaleString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
-    });
-  };
+    })
+  );
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 md:mt-0 mt-20">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
@@ -119,9 +136,7 @@ export default function NoteList({ notes, onUpdate }: NoteListProps) {
         </div>
         <Button
           variant="ghost"
-          onClick={() =>
-            setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"))
-          }
+          onClick={() => setSortDirection(prev => prev === "asc" ? "desc" : "asc")}
         >
           <SortDesc className="h-4 w-4 mr-2" />
           Sort
@@ -138,12 +153,19 @@ export default function NoteList({ notes, onUpdate }: NoteListProps) {
               <CardTitle className="text-sm font-medium">
                 {formatDate(note.createdAt)}
               </CardTitle>
-              {note.isAudio && note.duration && (
-                <div className="flex items-center text-sm text-muted-foreground">
-                  <Play className="h-3 w-3 mr-1" />
-                  {note.duration}
-                </div>
-              )}
+              <div className="flex items-center bg-gray-200 rounded-full px-2 py-1 text-sm text-muted-foreground">
+                {note.isAudio && note.duration ? (
+                  <>
+                    <Play className="h-3 w-3 mr-1" />
+                    {note.duration}
+                  </>
+                ) : (
+                  <>
+                    <Text className="h-3 w-3 mr-1" />
+                    Text
+                  </>
+                )}
+              </div>
             </CardHeader>
             <CardContent onClick={() => setSelectedNote(note)}>
               <h3 className="font-semibold mb-2">{note.title}</h3>
@@ -151,14 +173,22 @@ export default function NoteList({ notes, onUpdate }: NoteListProps) {
                 {note.content}
               </p>
               <div className="flex items-center justify-between mt-4">
-                {note.images && note.images.length > 0 && (
-                  <div className="flex items-center text-sm text-muted-foreground">
+                {note.images && note.images?.length > 0 && (
+                  <div className="flex bg-gray-200 rounded-full px-2 py-1 items-center text-sm text-muted-foreground">
                     <ImageIcon className="h-4 w-4 mr-1" />
-                    {note.images.length}{" "}
-                    {note.images.length === 1 ? "image" : "images"}
+                    {note.images.length} {note.images.length === 1 ? "image" : "images"}
                   </div>
                 )}
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 ml-auto">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => handleToggleFavorite(e, note)}
+                  >
+                    <Heart 
+                      className={`h-4 w-4 ${note.isFavorite ? "fill-current text-red-500" : ""}`}
+                    />
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
