@@ -61,6 +61,7 @@ export default function NoteList({ notes, onUpdate }: NoteListProps) {
         title: !note.isFavorite ? "Added to favorites" : "Removed from favorites",
       });
     } catch (error) {
+      console.log(error);
       toast({
         title: "Failed to update favorite status",
         variant: "destructive",

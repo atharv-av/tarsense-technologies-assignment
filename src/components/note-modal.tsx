@@ -146,6 +146,7 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
       window.URL.revokeObjectURL(url)
       document.body.removeChild(a)
     } catch (error) {
+      console.log(error);
       toast({
         title: "Error",
         description: "Failed to download audio",
@@ -235,6 +236,7 @@ export default function NoteModal({ note, onClose, onUpdate }: NoteModalProps) {
       onUpdate()
       onClose()
     } catch (error) {
+      console.log(error);
       toast({
         title: "Error",
         description: "Failed to update note",

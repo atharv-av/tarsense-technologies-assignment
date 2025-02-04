@@ -87,7 +87,7 @@ const SidebarContent = ({ onLogout }: SidebarProps) => {
 export function Sidebar({ onLogout }: SidebarProps) {
   return (
     <>
-      <div className="hidden md:flex">
+      <div className="hidden md:flex z-50">
         <div className="w-[240px] border-r bg-background">
           <SidebarContent onLogout={onLogout} />
         </div>
